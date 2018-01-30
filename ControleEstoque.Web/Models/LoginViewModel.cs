@@ -7,11 +7,11 @@ using System.Web;
 namespace ControleEstoque.Web.Models {
     public class LoginViewModel {
 
-        [Required]
+        [Required(ErrorMessage = "Informe um Usuário")]
         [Display(Name="Usuário:")]
         public string Usuario { get; set; }
 
-        [Required
+        [Required(ErrorMessage = "Informe uma senha")]
         [DataType(DataType.Password)]
         [Display(Name = "Senha:")]
         public string Senha { get; set; }
