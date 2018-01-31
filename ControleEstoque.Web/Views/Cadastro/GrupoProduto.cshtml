@@ -72,7 +72,10 @@
         </div>
     </section>
 </div>
+
+@Html.Hidden("id_cadastro");
 <div id="modal_cadastro" class="form-horizontal invisivel" role="dialog">
+    <div id="msg_mensagem_aviso" class="text-danger invisivel"></div>
     <fieldset>
         <div class="row">
             <div class="form-group">
@@ -95,6 +98,8 @@
                         <a id="btn_sair" class="btn btn-default" role="button" data-dismiss="modal"><i class="glyphicon glyphicon-remove"></i> Sair</a>
                         <a id="btn_confirmar" class="btn btn-primary" role="button" data-dissmiss="modal"><i class="glyphicon glyphicon-ok"></i> Salvar</a>
                     </div>
+                    <div id="msg_aviso" class="alert alert-warning invisivel">Falta preencher os campos acima.</div>
+                    <div id="msg_erro" class="alert alert-danger invisivel">Ops! Deu ruim!</div>
                 </div>
             </div>
         </div>
@@ -108,10 +113,13 @@
 
         function abrir_form(dados) {
 
+            $('#id_cadastro').val(dados.Id);
             $('#txt_nome').val(dados.Nome);
             $('#cbx_status').prop('checked', dados.Status);
 
-            var modal_cadastro = $('#modal_cadastro')
+            var modal_cadastro = $('#modal_cadastro');
+
+            limpar_mensagens();
 
             bootbox.dialog({
                 title: '@ViewBag.Title',
@@ -127,9 +135,40 @@
             });
         }
 
+        function criar_linha_grid(dados) {
+
+            var ret =
+                    '<tr data-id=' + dados.Id + '>' +
+                    '<td>' + dados.Nome + '</td>' +
+                    '<td>' + (dados.Status ? 'Ativado' : 'Desativado') + '</td>' +
+                    '<td>' +
+                    '<a class="btn btn-primary  btn_alterar" role="button" style="margin-right: 3px;">Alterar <i class="glyphicon glyphicon-pencil"></i></a>' +
+                    '<a class="btn btn-danger  btn_excluir" role="button"><i class="glyphicon glyphicon-trash"></i></a>' +
+                    '</td>' +
+                    '</tr>';
+
+            return ret;
+        }
+
+        function formatar_mensagem_aviso(mensagens) {
+
+            var ret = mensagens;
+            var retorno;
+
+            return '<ul>' + ret + '</ul>';
+        }
+
+        function limpar_mensagens(){
+
+            $('#msg_mensagem_aviso').empty();
+
+            $('#msg_aviso').hide();
+            $('#msg_mensagem_aviso').hide();
+            $('#msg_erro').hide();
+        }
 
         $(document).on('click', '#btn_incluir', function () {
-            abrir_form({Id: 0, Nome: '', Status: true})
+            abrir_form({ Id: 0, Nome: '', Status: true })
         })
         .on('click', '.btn_alterar', function () {
 
@@ -178,6 +217,56 @@
                     console.log('This was logged in the callback: ' + result);
                 }
             });
-        });
+        })
+
+        .on('click', '#btn_confirmar', function () {
+
+            var btn = $(this),
+                url = '@Url.Action("SalvarGrupoProduto", "Cadastro")',
+                param = {
+
+                    Id: $('#id_cadastro').val(),
+                    Nome: $('#txt_nome').val(),
+                    Status: $('#cbx_status').prop('checked')
+                };
+
+            $.post(url, param, function (response) {
+                if (response.Resultado == "OK") {
+
+                    if (param.Id == 0) {
+
+                        param.Id = response.IdSalvo
+                        var table = $('#grid_cadastro').find('tbody'),
+                            linha = criar_linha_grid(param);
+
+                        table.append(linha);
+                    } else {
+
+                        var linha = $('#grid_cadastro').find('tr[data-id=' + param.Id + ']').find('td');
+
+                        linha
+                            .eq(0).html(param.Nome).end()
+                            .eq(1).html(param.Status ? 'Ativado' : 'Desativado');
+                    }
+
+                    $('#modal_cadastro').parents('.bootbox').modal('hide');
+                } else if (response.Resultado == "ERRO") {
+
+                    $('#msg_aviso').hide();
+                    $('#msg_mensagem_aviso').hide();
+                    $('#msg_erro').show();
+                } else if (response.Resultado == "AVISO") {
+
+                    $('#msg_mensagem_aviso').html(formatar_mensagem_aviso(response.Mensagens));
+
+                    $('#msg_aviso').show();
+                    $('#msg_mensagem_aviso').show();
+                    $('#msg_erro').hide();
+
+                }
+            });
+        })
+
+        
     </script>
 }

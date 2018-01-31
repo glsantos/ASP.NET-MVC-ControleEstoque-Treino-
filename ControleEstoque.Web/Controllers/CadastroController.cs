@@ -18,47 +18,53 @@ namespace ControleEstoque.Web.Controllers
 
         [Authorize]
         public ActionResult GrupoProduto(){
-            return View(_listaGrupoProduto);
+            return View(GrupoProdutoModel.RecuperarLista());
         }
 
         [HttpPost]
         [Authorize]
         public ActionResult RecuperarGrupoProduto(int id) {
 
-            return Json (_listaGrupoProduto.Find(x => x.Id == id));
+            return Json (GrupoProdutoModel.RecuperarPeloId(id));
         }
 
         [HttpPost]
         [Authorize]
         public ActionResult SalvarGrupoProduto(GrupoProdutoModel model) {
 
-            var registroBD = _listaGrupoProduto.Find(x => x.Id == model.Id);
+            var resultado = "OK";
+            var mensagens = new List<string>();
+            var idSalvo = string.Empty;
 
-            if (registroBD == null) {
+            if (!ModelState.IsValid) {
+        
+                resultado = "AVISO";
+                mensagens = ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage).ToList();
+            }else {
 
-                registroBD = model;
-                registroBD.Id = _listaGrupoProduto.Max(x => x.Id) + 1;
-                _listaGrupoProduto.Add(registroBD);
-            } else {
+                try {
 
+                    var id = model.Salvar();
+                    
+                    if(id > 0) {
+
+                        idSalvo = id.ToString();
+                    } else {
+                        resultado = "ERRO";
+                    }
+                } catch (Exception e) {
+
+                    resultado = "ERRO";
+                }
             }
+            return Json(new { Resultado = resultado, Mensagens = mensagens, IdSalvo = idSalvo});
         }
 
         [HttpPost]
         [Authorize]
         public ActionResult ExcluirGrupoProduto(int id) {
-
-            var retorno = false;
-
-            var registroDB = _listaGrupoProduto.Find(x => x.Id == id);
-
-            if(registroDB != null) {
-
-                _listaGrupoProduto.Remove(registroDB);
-                retorno = true;
-            }
-
-            return Json(retorno);
+            
+            return Json(GrupoProdutoModel.ExcluirPeloId(id));
         }
 
         [Authorize]
